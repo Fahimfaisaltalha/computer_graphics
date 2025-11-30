@@ -1595,6 +1595,48 @@ void hut()
     drawLineDDA(0.84f, -0.29f, 0.84f, -0.36f);
     drawLineDDA(0.815f, -0.29f, 0.815f, -0.36f);
     drawLineDDA(0.79f, -0.325f, 0.84f, -0.325f);
+
+    // Small decorative pine tree - left of house
+    glColor3ub(34, 139, 34);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.48f, -0.52f);
+    glVertex2f(0.52f, -0.52f);
+    glVertex2f(0.50f, -0.46f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.485f, -0.48f);
+    glVertex2f(0.515f, -0.48f);
+    glVertex2f(0.50f, -0.43f);
+    glEnd();
+    // Tree trunk
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(0.495f, -0.52f);
+    glVertex2f(0.505f, -0.52f);
+    glVertex2f(0.505f, -0.48f);
+    glVertex2f(0.495f, -0.48f);
+    glEnd();
+
+    // Small decorative pine tree - right of house
+    glColor3ub(34, 139, 34);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.89f, -0.52f);
+    glVertex2f(0.93f, -0.52f);
+    glVertex2f(0.91f, -0.46f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.895f, -0.48f);
+    glVertex2f(0.925f, -0.48f);
+    glVertex2f(0.91f, -0.43f);
+    glEnd();
+    // Tree trunk
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(0.905f, -0.52f);
+    glVertex2f(0.915f, -0.52f);
+    glVertex2f(0.915f, -0.48f);
+    glVertex2f(0.905f, -0.48f);
+    glEnd();
 }
 void vehicle() // This is the truck
 {
@@ -1721,6 +1763,48 @@ void hut2()
     drawLineDDA(-0.745f, -0.58f, -0.745f, -0.63f);
     drawLineDDA(-0.7625f, -0.58f, -0.7625f, -0.63f);
     drawLineDDA(-0.78f, -0.605f, -0.745f, -0.605f);
+
+    // Small decorative pine tree - left of house
+    glColor3ub(34, 139, 34);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.82f, -0.78f);
+    glVertex2f(-0.78f, -0.78f);
+    glVertex2f(-0.80f, -0.74f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.815f, -0.76f);
+    glVertex2f(-0.785f, -0.76f);
+    glVertex2f(-0.80f, -0.72f);
+    glEnd();
+    // Tree trunk
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.805f, -0.78f);
+    glVertex2f(-0.795f, -0.78f);
+    glVertex2f(-0.795f, -0.76f);
+    glVertex2f(-0.805f, -0.76f);
+    glEnd();
+
+    // Small decorative pine tree - right of house
+    glColor3ub(34, 139, 34);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.62f, -0.78f);
+    glVertex2f(-0.58f, -0.78f);
+    glVertex2f(-0.60f, -0.74f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.615f, -0.76f);
+    glVertex2f(-0.585f, -0.76f);
+    glVertex2f(-0.60f, -0.72f);
+    glEnd();
+    // Tree trunk
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.605f, -0.78f);
+    glVertex2f(-0.595f, -0.78f);
+    glVertex2f(-0.595f, -0.76f);
+    glVertex2f(-0.605f, -0.76f);
+    glEnd();
 }
 
 void drawWindmill()
