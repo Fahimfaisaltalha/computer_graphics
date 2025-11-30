@@ -1504,51 +1504,97 @@ void bridge()
 
 void hut()
 {
-    // structures
-    glColor3ub(255, 150, 0);
-    glBegin(GL_TRIANGLES);
-    glVertex2f(0.544f, -0.14f);
-    glVertex2f(0.74f, -0.14f);
-    glVertex2f(0.642f, 0.14);
-    glEnd();
-    glColor3ub(255, 100, 0);
+    // Main house wall - warm brick color
+    glColor3ub(210, 140, 90);
     glBegin(GL_QUADS);
-    glVertex2f(0.56f, -0.42f);
-    glVertex2f(0.73f, -0.42f);
-    glVertex2f(0.73f, -0.14f);
-    glVertex2f(0.56f, -0.14f);
+    glVertex2f(0.54f, -0.42f);
+    glVertex2f(0.75f, -0.42f);
+    glVertex2f(0.75f, -0.14f);
+    glVertex2f(0.54f, -0.14f);
     glEnd();
+
+    // Roof - darker brown/red tiles
+    glColor3ub(160, 60, 40);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.52f, -0.14f);
+    glVertex2f(0.77f, -0.14f);
+    glVertex2f(0.645f, 0.08f);
+    glEnd();
+
+    // Roof edge highlight
+    glColor3ub(140, 50, 30);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.645f, 0.08f);
+    glVertex2f(0.77f, -0.14f);
+    glVertex2f(0.75f, -0.14f);
+    glEnd();
+
+    // Side extension wall
+    glColor3ub(195, 130, 80);
     glBegin(GL_POLYGON);
-    glVertex2f(0.73f, -0.42f);
-    glVertex2f(0.835f, -0.42f);
-    glVertex2f(0.835f, -0.27f);
-    glVertex2f(0.73f, -0.14f);
+    glVertex2f(0.75f, -0.42f);
+    glVertex2f(0.88f, -0.42f);
+    glVertex2f(0.88f, -0.25f);
+    glVertex2f(0.75f, -0.14f);
     glEnd();
-    // borders
-    glColor3ub(46, 11, 22);
-    glPointSize(3.2);
-    drawLineDDA(0.73f, -0.14f, 0.84f, -0.27f);
-    drawLineDDA(0.73f, -0.14f, 0.73f, -0.42f);
-    drawLineDDA(0.56f, -0.14f, 0.56f, -0.42f);
-    glPointSize(4.2);
-    drawLineDDA(0.552f, -0.42f, 0.84f, -0.42f);
-    // window1
-    glColor3ub(153, 206, 250);
-    glBegin(GL_POLYGON);
-    glVertex2f(0.76, -0.365);
-    glVertex2f(0.8, -0.365);
-    glColor3ub(100, 149, 237);
-    glVertex2f(0.8, -0.275);
-    glVertex2f(0.76, -0.275);
+
+    // Door - wooden brown
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(0.58f, -0.42f);
+    glVertex2f(0.64f, -0.42f);
+    glVertex2f(0.64f, -0.22f);
+    glVertex2f(0.58f, -0.22f);
     glEnd();
-    // door..
-    glColor3ub(0, 10, 100);
-    glBegin(GL_POLYGON);
-    glVertex2f(0.61, -0.415);
-    glVertex2f(0.682, -0.415);
-    glVertex2f(0.682, -0.21);
-    glVertex2f(0.61, -0.21);
+
+    // Door frame
+    glColor3ub(80, 50, 25);
+    glPointSize(2.5);
+    drawLineDDA(0.58f, -0.22f, 0.64f, -0.22f);
+    drawLineDDA(0.58f, -0.22f, 0.58f, -0.42f);
+    drawLineDDA(0.64f, -0.22f, 0.64f, -0.42f);
+
+    // Door handle
+    glColor3ub(255, 215, 0);
+    circleSolid(0.625f, -0.32f, 0.008f);
+
+    // Window 1 - front (on left side of door, no overlap)
+    glColor3ub(135, 206, 250);
+    glBegin(GL_QUADS);
+    glVertex2f(0.545f, -0.36f);
+    glVertex2f(0.575f, -0.36f);
+    glVertex2f(0.575f, -0.25f);
+    glVertex2f(0.545f, -0.25f);
     glEnd();
+
+    // Window frame 1
+    glColor3ub(80, 50, 25);
+    glPointSize(1.5);
+    drawLineDDA(0.545f, -0.25f, 0.575f, -0.25f);
+    drawLineDDA(0.545f, -0.36f, 0.575f, -0.36f);
+    drawLineDDA(0.545f, -0.25f, 0.545f, -0.36f);
+    drawLineDDA(0.575f, -0.25f, 0.575f, -0.36f);
+    drawLineDDA(0.56f, -0.25f, 0.56f, -0.36f);
+    drawLineDDA(0.545f, -0.305f, 0.575f, -0.305f);
+
+    // Window 2 - side extension
+    glColor3ub(135, 206, 250);
+    glBegin(GL_QUADS);
+    glVertex2f(0.79f, -0.36f);
+    glVertex2f(0.84f, -0.36f);
+    glVertex2f(0.84f, -0.29f);
+    glVertex2f(0.79f, -0.29f);
+    glEnd();
+
+    // Window frame 2
+    glColor3ub(80, 50, 25);
+    glPointSize(1.5);
+    drawLineDDA(0.79f, -0.29f, 0.84f, -0.29f);
+    drawLineDDA(0.79f, -0.36f, 0.84f, -0.36f);
+    drawLineDDA(0.79f, -0.29f, 0.79f, -0.36f);
+    drawLineDDA(0.84f, -0.29f, 0.84f, -0.36f);
+    drawLineDDA(0.815f, -0.29f, 0.815f, -0.36f);
+    drawLineDDA(0.79f, -0.325f, 0.84f, -0.325f);
 }
 void vehicle() // This is the truck
 {
@@ -1612,27 +1658,69 @@ void vehicle() // This is the truck
 
 void hut2()
 {
-    glColor3ub(132, 31, 39);
+    // Main wall - red brick
+    glColor3ub(180, 80, 70);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.79f, -0.72f);
+    glVertex2f(-0.62f, -0.72f);
+    glVertex2f(-0.62f, -0.50f);
+    glVertex2f(-0.79f, -0.50f);
+    glEnd();
+
+    // Roof - dark red
+    glColor3ub(140, 50, 50);
     glBegin(GL_TRIANGLES);
-    glVertex2f(-.79, -0.50);
-    glVertex2f(-0.62, -0.50);
-    glVertex2f(-0.71, -0.30);
+    glVertex2f(-0.81f, -0.50f);
+    glVertex2f(-0.60f, -0.50f);
+    glVertex2f(-0.705f, -0.28f);
     glEnd();
-    glColor3ub(220, 20, 60);
-    glBegin(GL_POLYGON);
-    glVertex2f(-.78, -0.72);
-    glVertex2f(-0.63, -0.72);
-    glVertex2f(-0.63, -0.50);
-    glVertex2f(-0.78, -0.50);
+
+    // Roof highlight
+    glColor3ub(120, 40, 40);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.705f, -0.28f);
+    glVertex2f(-0.60f, -0.50f);
+    glVertex2f(-0.62f, -0.50f);
     glEnd();
-    // door
-    glColor3ub(122, 21, 29);
-    glBegin(GL_POLYGON);
-    glVertex2f(-.68, -0.72);
-    glVertex2f(-0.73, -0.72);
-    glVertex2f(-0.73, -0.58);
-    glVertex2f(-0.68, -0.58);
+
+    // Door - wooden
+    glColor3ub(101, 67, 33);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.73f, -0.72f);
+    glVertex2f(-0.68f, -0.72f);
+    glVertex2f(-0.68f, -0.56f);
+    glVertex2f(-0.73f, -0.56f);
     glEnd();
+
+    // Door frame
+    glColor3ub(70, 45, 20);
+    glPointSize(2.0);
+    drawLineDDA(-0.73f, -0.56f, -0.68f, -0.56f);
+    drawLineDDA(-0.73f, -0.56f, -0.73f, -0.72f);
+    drawLineDDA(-0.68f, -0.56f, -0.68f, -0.72f);
+
+    // Door handle
+    glColor3ub(255, 215, 0);
+    circleSolid(-0.69f, -0.64f, 0.008f);
+
+    // Window - moved to left side of door
+    glColor3ub(135, 206, 250);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.78f, -0.63f);
+    glVertex2f(-0.745f, -0.63f);
+    glVertex2f(-0.745f, -0.58f);
+    glVertex2f(-0.78f, -0.58f);
+    glEnd();
+
+    // Window frame
+    glColor3ub(70, 45, 20);
+    glPointSize(1.5);
+    drawLineDDA(-0.78f, -0.58f, -0.745f, -0.58f);
+    drawLineDDA(-0.78f, -0.63f, -0.745f, -0.63f);
+    drawLineDDA(-0.78f, -0.58f, -0.78f, -0.63f);
+    drawLineDDA(-0.745f, -0.58f, -0.745f, -0.63f);
+    drawLineDDA(-0.7625f, -0.58f, -0.7625f, -0.63f);
+    drawLineDDA(-0.78f, -0.605f, -0.745f, -0.605f);
 }
 
 void drawWindmill()
