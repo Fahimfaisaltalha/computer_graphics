@@ -72,8 +72,17 @@ GLfloat cloudSpeed = 0.005f;
 GLfloat cloud1Position = 0.0f;
 GLfloat cloud1Speed = 0.007f;
 
-GLfloat moonPosition = 0.0f;
-GLfloat moonSpeed = 0.001f;
+GLfloat moonPosition = -0.6f; // Start closer to horizon for quick appearance
+GLfloat moonSpeed = 0.003f;   // Same speed as sun for equal day/night duration
+int moonPauseCounter = 0;     // Counter for 10-second pause at peak
+
+// Shear transformation variables for wind effect
+GLfloat windShear = 0.0f;
+GLfloat windShearSpeed = 0.002f;
+int windDirection = 1;
+
+// Water reflection parameters
+GLfloat waterWaveOffset = 0.0f;
 
 void updateFan(int value)
 {
@@ -82,6 +91,36 @@ void updateFan(int value)
     glutPostRedisplay();
 
     glutTimerFunc(1, updateFan, 0);
+}
+
+void updateWindShear(int value)
+{
+    // Oscillating wind effect using shear transformation
+    windShear += windShearSpeed * windDirection;
+
+    if (windShear > 0.08f)
+    {
+        windDirection = -1;
+    }
+    else if (windShear < -0.08f)
+    {
+        windDirection = 1;
+    }
+
+    glutPostRedisplay();
+    glutTimerFunc(50, updateWindShear, 0);
+}
+
+void updateWaterWave(int value)
+{
+    waterWaveOffset += 0.01f;
+    if (waterWaveOffset > 6.28f) // 2*PI
+    {
+        waterWaveOffset = 0.0f;
+    }
+
+    glutPostRedisplay();
+    glutTimerFunc(50, updateWaterWave, 0);
 }
 
 // Cohen-Sutherland Line Clipping Algorithm
@@ -252,39 +291,69 @@ void circleSolid(float x, float y, float radius)
     glEnd();
 }
 
-GLfloat sunPosition = 0.0f;
-GLfloat sunSpeed = 0.006f;
+GLfloat sunPosition = 0.0f; // Sun starts at top (day)
+GLfloat sunSpeed = 0.003f;  // Movement speed
+int dayNightDirection = -1; // -1 for setting, 1 for rising
+int sunPauseCounter = 0;    // Counter for 10-second pause at peak
 void updateMoon(int value);
 
 void updateSun(int value)
 {
-    if (sunPosition < -.9)
+    // If at top position, pause for 10 seconds (100 updates * 100ms)
+    if (sunPosition >= 0.0f && dayNightDirection == 1)
     {
-        sunPosition = -.9;
-        // isItNight = true;
+        sunPauseCounter++;
+        if (sunPauseCounter >= 100)
+        {
+            sunPauseCounter = 0;
+            dayNightDirection = -1; // Start setting
+        }
+    }
+    // If at bottom, don't pause - let moon take over
+    else if (sunPosition <= -0.9f && dayNightDirection == -1)
+    {
+        sunPosition = -0.9f;
+        // Sun stays here while moon is up, will rise when moon sets
+    }
+    else
+    {
+        // Normal movement
+        sunPosition += sunSpeed * dayNightDirection;
     }
 
-    sunPosition -= sunSpeed;
-
     glutPostRedisplay();
-
     glutTimerFunc(100, updateSun, 0);
 }
 
 void updateMoon(int value)
 {
-    moonPosition += moonSpeed;
-    if (moonPosition > 0.8)
+    // Moon moves opposite to sun
+    int moonDirection = -dayNightDirection;
+
+    // If at top position (0.6 = peak, same height as sun at day), pause for 10 seconds
+    if (moonPosition >= 0.6f && moonDirection == 1)
     {
-        moonPosition = 0.8;
+        moonPauseCounter++;
+        if (moonPauseCounter >= 100)
+        {
+            moonPauseCounter = 0;
+            dayNightDirection = 1; // Trigger sun to rise (which makes moon set)
+        }
     }
-    moonPosition += moonSpeed;
+    // If at bottom, stay there while sun is up
+    else if (moonPosition <= -0.6f && moonDirection == -1)
+    {
+        moonPosition = -0.6f;
+    }
+    else
+    {
+        // Normal movement (opposite to sun - when sun goes down, moon goes up)
+        moonPosition += moonSpeed * moonDirection;
+    }
 
     glutPostRedisplay();
-
     glutTimerFunc(100, updateMoon, 0);
 }
-
 void updateBoat(int value)
 {
 
@@ -348,20 +417,29 @@ void windMills()
 
     glBegin(GL_TRIANGLE_FAN);
     glColor3f(255, 255, 255);
-    for (a = 1.0f; a < 360.0f; a += 0.2)
+    glVertex2f(x1, y1); // Center point for triangle fan
+    for (a = 0.0f; a <= 360.0f; a += 1.0)
     {
-        x2 = x1 + sin(a) * radius;
-        y2 = y1 + cos(a) * radius;
+        float rad = a * 3.14159f / 180.0f; // Convert to radians
+        x2 = x1 + sin(rad) * radius;
+        y2 = y1 + cos(rad) * radius;
         glVertex2f(x2, y2);
     }
     glEnd();
-
-    // angle+= 0.05;
 }
 
 void tree()
 {
-    // Tree
+    // Tree 1 with wind shear effect
+    glPushMatrix();
+    // Apply shear transformation matrix for wind effect
+    GLfloat shearMatrix[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        windShear, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f};
+    glMultMatrixf(shearMatrix);
+
     glColor3ub(0, 102, 0);
     glPointSize(2.0);
     glBegin(GL_TRIANGLES);
@@ -375,6 +453,9 @@ void tree()
     glVertex2f(-0.85f, -0.7f);
     glVertex2f(-0.85f, -0.35f);
     glEnd();
+    glPopMatrix();
+
+    // Tree trunk (not affected by wind)
     glColor3ub(102, 53, 0);
     glBegin(GL_QUADS);
     glVertex2f(-0.87f, -0.7f);
@@ -383,7 +464,15 @@ void tree()
     glVertex2f(-0.83f, -0.7f);
     glEnd();
 
-    // Tree
+    // Tree 2 with wind shear effect
+    glPushMatrix();
+    GLfloat shearMatrix2[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        windShear * 0.8f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f};
+    glMultMatrixf(shearMatrix2);
+
     glColor3ub(0, 102, 0);
     glPointSize(2.0);
     glBegin(GL_TRIANGLES);
@@ -397,6 +486,8 @@ void tree()
     glVertex2f(-0.0f, -0.7f);
     glVertex2f(0.08f, -0.7f);
     glEnd();
+    glPopMatrix();
+
     glColor3ub(102, 53, 0);
     glBegin(GL_QUADS);
     glVertex2f(-0.02f, -0.7f);
@@ -405,7 +496,15 @@ void tree()
     glVertex2f(0.02f, -0.7f);
     glEnd();
 
-    // Tree
+    // Tree 3 with wind shear effect
+    glPushMatrix();
+    GLfloat shearMatrix3[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        windShear * 0.9f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f};
+    glMultMatrixf(shearMatrix3);
+
     glColor3ub(0, 102, 0);
     glPointSize(2.0);
     glBegin(GL_TRIANGLES);
@@ -419,6 +518,8 @@ void tree()
     glVertex2f(0.2f, -0.65f);
     glVertex2f(0.27f, -0.65f);
     glEnd();
+    glPopMatrix();
+
     glColor3ub(102, 53, 0);
     glBegin(GL_QUADS);
     glVertex2f(0.18f, -0.65f);
@@ -496,17 +597,19 @@ void tree()
 
 void river()
 {
-    // River with gradient for depth effect
+    // River with enhanced gradient and shimmer effect
+    float shimmer = sin(waterWaveOffset) * 10.0f;
+
     glBegin(GL_POLYGON);
-    glColor3ub(100, 150, 220); // Lighter blue at top
+    glColor3ub(100 + shimmer, 150 + shimmer, 220); // Lighter blue at top with shimmer
     glVertex2f(-1.0f, -0.1f);
     glVertex2f(-0.8f, -0.1f);
     glVertex2f(-0.68f, -0.13f);
     glVertex2f(-0.3f, -0.13f);
-    glColor3ub(70, 130, 200);
+    glColor3ub(70 + shimmer * 0.5f, 130 + shimmer * 0.5f, 200);
     glVertex2f(-0.4f, -0.32f);
     glVertex2f(-0.19f, -0.49f);
-    glColor3ub(50, 110, 180); // Darker blue for depth
+    glColor3ub(50 + shimmer * 0.3f, 110 + shimmer * 0.3f, 180); // Darker blue for depth
     glVertex2f(-0.25f, -0.67f);
     glVertex2f(-0.04f, -0.79f);
     glVertex2f(0.016f, -0.86f);
@@ -520,6 +623,31 @@ void river()
     glColor3ub(40, 90, 160);
     glVertex2f(-1.0, -1.0f);
     glEnd();
+
+    // Add water reflection of sun (when visible)
+    if (sunPosition > -0.75f)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Reflected sun in water with distortion
+        float reflectionY = -0.7f - sunPosition;
+        float distortion = sin(waterWaveOffset * 2.0f) * 0.02f;
+
+        glBegin(GL_TRIANGLE_FAN);
+        glColor4f(1.0f, 0.95f, 0.3f, 0.3f); // Semi-transparent yellow
+        glVertex2f(-0.8f + distortion, reflectionY);
+        for (float a = 0.0f; a < 360.0f; a += 20.0f)
+        {
+            float rad = a * 3.14159f / 180.0f;
+            float x = -0.8f + sin(rad) * 0.08f + distortion;
+            float y = reflectionY + cos(rad) * 0.05f;
+            glVertex2f(x, y);
+        }
+        glEnd();
+
+        glDisable(GL_BLEND);
+    }
 }
 
 void hills()
@@ -678,28 +806,63 @@ void sun()
 
     x1 = -0.8, y1 = 0.7;
 
-    // Outer glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Outer glow layer 1 (large)
     glBegin(GL_TRIANGLE_FAN);
-    glColor4f(1.0f, 0.95f, 0.3f, 0.3f); // Semi-transparent yellow glow
+    glColor4f(1.0f, 0.9f, 0.3f, 0.15f);
     glVertex2f(x1, y1);
-    glColor4f(1.0f, 0.95f, 0.3f, 0.0f);
-    for (a = 0.0f; a < 360.0f; a += 0.2)
+    glColor4f(1.0f, 0.85f, 0.2f, 0.0f);
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
     {
-        x2 = x1 + sin(a) * radius * 1.8;
-        y2 = y1 + cos(a) * radius * 1.8;
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius * 2.5;
+        y2 = y1 + cos(rad) * radius * 2.5;
         glVertex2f(x2, y2);
     }
     glEnd();
 
-    // Main sun body
+    // Outer glow layer 2 (medium)
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(1.0f, 1.0f, 0.2f); // Bright yellow
+    glColor4f(1.0f, 0.95f, 0.3f, 0.25f);
     glVertex2f(x1, y1);
-    glColor3f(1.0f, 0.85f, 0.0f); // Orange-yellow edge
-    for (a = 0.0f; a < 360.0f; a += 0.2)
+    glColor4f(1.0f, 0.9f, 0.2f, 0.0f);
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
     {
-        x2 = x1 + sin(a) * radius;
-        y2 = y1 + cos(a) * radius;
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius * 1.8;
+        y2 = y1 + cos(rad) * radius * 1.8;
+        glVertex2f(x2, y2);
+    }
+    glEnd();
+
+    glDisable(GL_BLEND);
+
+    // Main sun body with gradient
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(1.0f, 1.0f, 0.9f); // Bright white-yellow center
+    glVertex2f(x1, y1);
+    glColor3f(1.0f, 0.9f, 0.1f); // Yellow
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
+    {
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius * 0.7;
+        y2 = y1 + cos(rad) * radius * 0.7;
+        glVertex2f(x2, y2);
+    }
+    glEnd();
+
+    // Outer sun ring
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(1.0f, 0.9f, 0.1f);
+    glVertex2f(x1, y1);
+    glColor3f(1.0f, 0.8f, 0.0f); // Orange-yellow edge
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
+    {
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius;
+        y2 = y1 + cos(rad) * radius;
         glVertex2f(x2, y2);
     }
     glEnd();
@@ -715,32 +878,46 @@ void moon()
     float a;
     double radius = 0.08;
 
-    x1 = -0.8, y1 = -0.5;
+    x1 = -0.8, y1 = 0.0; // Base position at center, will move with moonPosition
 
-    // Moon glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Moon glow - outer layer
     glBegin(GL_TRIANGLE_FAN);
-    glColor4f(0.9f, 0.95f, 1.0f, 0.4f);
+    glColor4f(0.85f, 0.9f, 1.0f, 0.3f);
     glVertex2f(x1, y1);
     glColor4f(0.8f, 0.85f, 1.0f, 0.0f);
-    for (a = 0.0f; a < 360.0f; a += 0.2)
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
     {
-        x2 = x1 + sin(a) * radius * 2.0;
-        y2 = y1 + cos(a) * radius * 2.0;
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius * 2.5;
+        y2 = y1 + cos(rad) * radius * 2.5;
         glVertex2f(x2, y2);
     }
     glEnd();
 
+    glDisable(GL_BLEND);
+
+    // Main moon body with slight gradient
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(255, 255, 255);
-    for (a = 0.0f; a < 360.0f; a += 0.2)
+    glColor3f(1.0f, 1.0f, 1.0f); // Bright white center
+    glVertex2f(x1, y1);
+    glColor3f(0.95f, 0.95f, 0.98f); // Slightly blue-tinted edge
+    for (a = 0.0f; a <= 360.0f; a += 2.0)
     {
-        x2 = x1 + sin(a) * radius;
-        y2 = y1 + cos(a) * radius;
+        float rad = a * 3.14159f / 180.0f;
+        x2 = x1 + sin(rad) * radius;
+        y2 = y1 + cos(rad) * radius;
         glVertex2f(x2, y2);
     }
-    //  sndPlaySound("crick.wav",SND_ASYNC);
-    // PlaySound(NULL, 0, 0);
     glEnd();
+
+    // Add moon craters for realism
+    glColor3f(0.85f, 0.85f, 0.88f);
+    circleSolid(x1 + 0.03f, y1 + 0.02f, 0.015);
+    circleSolid(x1 - 0.02f, y1 - 0.03f, 0.012);
+    circleSolid(x1 + 0.01f, y1 - 0.04f, 0.01);
 
     glPopMatrix();
 }
@@ -761,8 +938,12 @@ void clouds1()
 
     x1 = -0.4, y1 = 0.65;
 
+    // Enhanced cloud rendering with white/light gray color
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f); // White with slight transparency
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x2 = x1 + sin(a) * radius;
@@ -774,7 +955,7 @@ void clouds1()
     x3 = -0.35, y3 = 0.56;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x4 = x3 + sin(a) * radius;
@@ -786,7 +967,7 @@ void clouds1()
     x5 = -0.35, y5 = 0.7;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x6 = x5 + sin(a) * radius;
@@ -798,7 +979,7 @@ void clouds1()
     x7 = -0.26, y7 = 0.56;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x8 = x7 + sin(a) * radius;
@@ -810,7 +991,7 @@ void clouds1()
     x9 = -0.26, y9 = 0.7;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x0 = x9 + sin(a) * radius;
@@ -822,7 +1003,7 @@ void clouds1()
     x11 = -0.18, y11 = 0.63;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x12 = x11 + sin(a) * radius;
@@ -834,7 +1015,7 @@ void clouds1()
     x13 = -0.3, y13 = 0.63;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x14 = x13 + sin(a) * radius;
@@ -842,6 +1023,8 @@ void clouds1()
         glVertex2f(x14, y14);
     }
     glEnd();
+
+    glDisable(GL_BLEND);
 
     glPopMatrix();
 }
@@ -862,8 +1045,11 @@ void clouds2()
 
     x1 = 0.5, y1 = 0.65;
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x2 = x1 + sin(a) * radius;
@@ -875,7 +1061,7 @@ void clouds2()
     x3 = 0.45, y3 = 0.56;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x4 = x3 + sin(a) * radius;
@@ -887,7 +1073,7 @@ void clouds2()
     x5 = 0.45, y5 = 0.7;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x6 = x5 + sin(a) * radius;
@@ -899,7 +1085,7 @@ void clouds2()
     x7 = 0.36, y7 = 0.56;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x8 = x7 + sin(a) * radius;
@@ -911,7 +1097,7 @@ void clouds2()
     x9 = 0.36, y9 = 0.7;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x0 = x9 + sin(a) * radius;
@@ -923,7 +1109,7 @@ void clouds2()
     x11 = 0.28, y11 = 0.63;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(0.98f, 0.98f, 1.0f, 0.88f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x12 = x11 + sin(a) * radius;
@@ -935,7 +1121,7 @@ void clouds2()
     x13 = 0.4, y13 = 0.63;
 
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(239, 255, 84);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
     for (a = 0.0f; a < 360.0f; a += 0.2)
     {
         x14 = x13 + sin(a) * radius;
@@ -943,6 +1129,8 @@ void clouds2()
         glVertex2f(x14, y14);
     }
     glEnd();
+
+    glDisable(GL_BLEND);
 
     glPopMatrix();
 }
@@ -1006,7 +1194,6 @@ void night(int value)
     glEnd();
 
     glutPostRedisplay();
-    glutTimerFunc(1000, updateMoon, 0);
 }
 
 void ship()
@@ -1239,6 +1426,7 @@ void road1()
 }
 void grass2()
 {
+    // Enhanced grass with gradient and texture effect
     glBegin(GL_POLYGON);
     glColor3ub(85, 180, 85); // Lighter green at top
     glVertex2f(0.0f, 0.0f);
@@ -1249,6 +1437,20 @@ void grass2()
     glVertex2f(1.0f, -1.0);
     glColor3ub(50, 160, 50);
     glVertex2f(1.0f, 0.05f);
+    glEnd();
+
+    // Add some grass texture details
+    glColor3ub(70, 150, 70);
+    glPointSize(1.5f);
+    glBegin(GL_POINTS);
+    for (float x = 0.1f; x < 0.9f; x += 0.08f)
+    {
+        for (float y = -0.7f; y < -0.3f; y += 0.05f)
+        {
+            float offset = sin(x * 10.0f + waterWaveOffset) * 0.01f;
+            glVertex2f(x + offset, y);
+        }
+    }
     glEnd();
 }
 
@@ -1541,15 +1743,27 @@ void myDisplay(void)
         }*/
     if (start_flag == 0)
     {
-        sky(1);
-
-        if (sunPosition < -.75)
+        // Render appropriate sky based on sun position
+        if (sunPosition <= -0.7)
         {
             night(1);
         }
-        sun();
+        else
+        {
+            sky(1);
+        }
 
-        moon();
+        // Draw sun only when it's above horizon (day time)
+        if (sunPosition > -0.7)
+        {
+            sun();
+        }
+
+        // Draw moon after sun sets - always visible during night
+        if (sunPosition <= -0.7)
+        {
+            moon();
+        }
 
         grass2();
 
@@ -1665,7 +1879,9 @@ int main(int argc, char **argv)
     cout << "  - Animated Vehicles & Windmill" << endl;
     cout << "  - DDA Line Drawing Algorithm" << endl;
     cout << "  - Midpoint Circle Algorithm" << endl;
-    cout << "  - Cohen-Sutherland Clipping\n"
+    cout << "  - Cohen-Sutherland Clipping" << endl;
+    cout << "  - Shear Transformation (Wind Effect)" << endl;
+    cout << "  - Reflection (Water Surface)\n"
          << endl;
 
     cout << "CONTROLS:" << endl;
@@ -1684,7 +1900,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     glutInitWindowSize(1200, 680);
     glutInitWindowPosition(50, 10);
-    glutCreateWindow("🌅 Scenic Day-Night Landscape | Computer Graphics Project 🌙");
+    glutCreateWindow("Scenic Day-Night Landscape | Computer Graphics Project");
 
     myInit();
 
@@ -1699,6 +1915,9 @@ int main(int argc, char **argv)
     glutTimerFunc(1000, updateTruck, 0);
     glutTimerFunc(1000, updateCar, 0);
     glutTimerFunc(1000, updateSun, 0);
+    glutTimerFunc(1000, updateMoon, 0);
+    glutTimerFunc(50, updateWindShear, 0); // Wind shear effect
+    glutTimerFunc(50, updateWaterWave, 0); // Water wave effect
 
     glutMainLoop();
 }
