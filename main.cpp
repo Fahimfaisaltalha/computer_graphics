@@ -78,7 +78,7 @@ int moonPauseCounter = 0;     // Counter for 10-second pause at peak
 
 // Shear transformation variables for wind effect
 GLfloat windShear = 0.0f;
-GLfloat windShearSpeed = 0.002f;
+GLfloat windShearSpeed = 0.0005f; // Much slower for gentle breeze
 int windDirection = 1;
 
 // Water reflection parameters
@@ -95,20 +95,15 @@ void updateFan(int value)
 
 void updateWindShear(int value)
 {
-    // Oscillating wind effect using shear transformation
-    windShear += windShearSpeed * windDirection;
+    // Smooth, gentle oscillating wind effect using sine wave for natural movement
+    static float windTime = 0.0f;
+    windTime += 0.02f;
 
-    if (windShear > 0.08f)
-    {
-        windDirection = -1;
-    }
-    else if (windShear < -0.08f)
-    {
-        windDirection = 1;
-    }
+    // Use sine wave for smooth, natural wind motion
+    windShear = sin(windTime) * 0.025f; // Gentler maximum sway
 
     glutPostRedisplay();
-    glutTimerFunc(50, updateWindShear, 0);
+    glutTimerFunc(100, updateWindShear, 0); // Slower update rate for smoother motion
 }
 
 void updateWaterWave(int value)
@@ -883,16 +878,16 @@ void moon()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Moon glow - outer layer
+    // Moon glow - soft light glow only
     glBegin(GL_TRIANGLE_FAN);
-    glColor4f(0.85f, 0.9f, 1.0f, 0.3f);
+    glColor4f(0.95f, 0.95f, 1.0f, 0.15f);
     glVertex2f(x1, y1);
-    glColor4f(0.8f, 0.85f, 1.0f, 0.0f);
+    glColor4f(0.9f, 0.9f, 1.0f, 0.0f);
     for (a = 0.0f; a <= 360.0f; a += 2.0)
     {
         float rad = a * 3.14159f / 180.0f;
-        x2 = x1 + sin(rad) * radius * 2.5;
-        y2 = y1 + cos(rad) * radius * 2.5;
+        x2 = x1 + sin(rad) * radius * 1.8;
+        y2 = y1 + cos(rad) * radius * 1.8;
         glVertex2f(x2, y2);
     }
     glEnd();
@@ -913,11 +908,12 @@ void moon()
     }
     glEnd();
 
-    // Add moon craters for realism
+    // Add moon craters for realism - visible gray texture
     glColor3f(0.85f, 0.85f, 0.88f);
     circleSolid(x1 + 0.03f, y1 + 0.02f, 0.015);
-    circleSolid(x1 - 0.02f, y1 - 0.03f, 0.012);
-    circleSolid(x1 + 0.01f, y1 - 0.04f, 0.01);
+    circleSolid(x1 - 0.02f, y1 + 0.01f, 0.012);
+    circleSolid(x1 - 0.04f, y1 - 0.02f, 0.01);
+    circleSolid(x1 + 0.02f, y1 - 0.03f, 0.008);
 
     glPopMatrix();
 }
@@ -1156,14 +1152,14 @@ void sky(int value)
 
 void night(int value)
 {
-    // Night sky gradient
+    // Night sky gradient - extends to bottom of screen
     glBegin(GL_POLYGON);
     glColor3f(0.02f, 0.02f, 0.15f); // Deep midnight blue top
     glVertex2f(-1, 1);
     glVertex2f(1, 1);
     glColor3f(0.1f, 0.1f, 0.3f); // Lighter blue at horizon
-    glVertex2f(1, -.1);
-    glVertex2f(-1, -.1);
+    glVertex2f(1, -1);
+    glVertex2f(-1, -1);
     glEnd();
 
     // Add twinkling stars
