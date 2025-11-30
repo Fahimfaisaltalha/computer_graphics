@@ -31,62 +31,90 @@ void renderBitmapString(float x, float y, void *font, const char *string)
 
 // bool isItNight = false;
 void night(int value);
+
+// ============================================
+// ENHANCEMENT VARIABLES
+// ============================================
+int dayCounter = 1;     // Tracks number of complete day cycles
+bool isPaused = false;  // Pause/resume all animations
+float timeSpeed = 1.0f; // Time speed multiplier (0.5x to 5.0x)
+float zoomLevel = 1.0f; // Camera zoom level (0.5x to 2.0x)
+
+// ============================================
+// ANIMATION VARIABLES
+// ============================================
+// Windmill rotation
 GLfloat angle = 0.0f;
+
+// Truck animation (moves right on top road)
 GLfloat truckPosition = 0.0f;
 GLfloat truckSpeed = 0.05f;
 
 void updateTruck(int value)
 {
-    if (truckPosition > 1.8)
+    if (!isPaused)
     {
-        truckPosition = -1.2f;
+        if (truckPosition > 1.8)
+        {
+            truckPosition = -1.2f;
+        }
+        truckPosition += truckSpeed;
     }
-    truckPosition += truckSpeed;
 
     glutPostRedisplay();
 
     glutTimerFunc(100, updateTruck, 0);
 }
 
+// Car animation (moves left on bottom road)
 GLfloat carPosition = 0.0f;
 GLfloat carSpeed = 0.05f;
 void updateCar(int value)
 {
-    if (carPosition < -1.5)
+    if (!isPaused)
     {
-        carPosition = 1.2f;
+        if (carPosition < -1.5)
+        {
+            carPosition = 1.2f;
+        }
+        carPosition -= carSpeed;
     }
-    carPosition -= carSpeed;
 
     glutPostRedisplay();
 
     glutTimerFunc(100, updateCar, 0);
 }
 
+// Boat animation (sails through river)
 GLfloat boatPosition = 0.0f;
 GLfloat boatSpeed = 0.005f;
 
-GLfloat cloudPosition = 0.0f;
+// Cloud animations
+GLfloat cloudPosition = 0.0f; // Cloud group 1
 GLfloat cloudSpeed = 0.005f;
 
-GLfloat cloud1Position = 0.0f;
+GLfloat cloud1Position = 0.0f; // Cloud group 2
 GLfloat cloud1Speed = 0.007f;
 
-GLfloat moonPosition = -0.6f; // Start closer to horizon for quick appearance
-GLfloat moonSpeed = 0.003f;   // Same speed as sun for equal day/night duration
-int moonPauseCounter = 0;     // Counter for 10-second pause at peak
+// Moon animation (rises when sun sets)
+GLfloat moonPosition = -0.6f; // Start at horizon
+GLfloat moonSpeed = 0.003f;   // Synchronized with sun speed
+int moonPauseCounter = 0;     // 10-second pause counter at peak
 
-// Shear transformation variables for wind effect
+// Wind shear transformation for tree sway effect
 GLfloat windShear = 0.0f;
-GLfloat windShearSpeed = 0.0005f; // Much slower for gentle breeze
+GLfloat windShearSpeed = 0.0005f; // Gentle breeze speed
 int windDirection = 1;
 
-// Water reflection parameters
+// Water wave animation for reflection effect
 GLfloat waterWaveOffset = 0.0f;
 
 void updateFan(int value)
 {
-    angle += 30.1f;
+    if (!isPaused)
+    {
+        angle += 30.1f;
+    }
 
     glutPostRedisplay();
 
@@ -95,12 +123,15 @@ void updateFan(int value)
 
 void updateWindShear(int value)
 {
-    // Smooth, gentle oscillating wind effect using sine wave for natural movement
-    static float windTime = 0.0f;
-    windTime += 0.02f;
+    if (!isPaused)
+    {
+        // Smooth, gentle oscillating wind effect using sine wave for natural movement
+        static float windTime = 0.0f;
+        windTime += 0.02f;
 
-    // Use sine wave for smooth, natural wind motion
-    windShear = sin(windTime) * 0.025f; // Gentler maximum sway
+        // Use sine wave for smooth, natural wind motion
+        windShear = sin(windTime) * 0.025f; // Gentler maximum sway
+    }
 
     glutPostRedisplay();
     glutTimerFunc(100, updateWindShear, 0); // Slower update rate for smoother motion
@@ -108,23 +139,30 @@ void updateWindShear(int value)
 
 void updateWaterWave(int value)
 {
-    waterWaveOffset += 0.01f;
-    if (waterWaveOffset > 6.28f) // 2*PI
+    if (!isPaused)
     {
-        waterWaveOffset = 0.0f;
+        waterWaveOffset += 0.01f;
+        if (waterWaveOffset > 6.28f) // 2*PI
+        {
+            waterWaveOffset = 0.0f;
+        }
     }
 
     glutPostRedisplay();
     glutTimerFunc(50, updateWaterWave, 0);
 }
 
-// Cohen-Sutherland Line Clipping Algorithm
+// ============================================
+// COHEN-SUTHERLAND LINE CLIPPING ALGORITHM
+// ============================================
+// Clips lines to viewport boundaries before drawing
+// Uses 4-bit region codes to identify point positions
 // Region codes
-const int INSIDE = 0; // 0000
-const int LEFT = 1;   // 0001
-const int RIGHT = 2;  // 0010
-const int BOTTOM = 4; // 0100
-const int TOP = 8;    // 1000
+const int INSIDE = 0; // 0000 - Point inside window
+const int LEFT = 1;   // 0001 - Point left of window
+const int RIGHT = 2;  // 0010 - Point right of window
+const int BOTTOM = 4; // 0100 - Point below window
+const int TOP = 8;    // 1000 - Point above window
 
 // Clipping window boundaries
 const float X_MIN = -1.0f;
@@ -220,7 +258,11 @@ bool cohenSutherlandClip(float &x1, float &y1, float &x2, float &y2)
     return accept;
 }
 
-// DDA Line Drawing Algorithm with Cohen-Sutherland Clipping
+// ============================================
+// DDA (DIGITAL DIFFERENTIAL ANALYZER) LINE DRAWING
+// ============================================
+// Draws anti-aliased lines using incremental calculations
+// Integrated with Cohen-Sutherland clipping for viewport culling
 void drawLineDDA(float x1, float y1, float x2, float y2)
 {
     // Apply Cohen-Sutherland clipping
@@ -252,7 +294,11 @@ void drawLineDDA(float x1, float y1, float x2, float y2)
     glEnd();
 }
 
-// Filled circle using Midpoint Circle Algorithm (for solid circles)
+// ============================================
+// MIDPOINT CIRCLE ALGORITHM WITH SCANLINE FILL
+// ============================================
+// Draws filled circles using symmetric properties
+// Uses scanline filling for solid interior
 void circleSolid(float x, float y, float radius)
 {
     // Use scanline fill with midpoint circle algorithm
@@ -286,64 +332,80 @@ void circleSolid(float x, float y, float radius)
     glEnd();
 }
 
-GLfloat sunPosition = 0.0f; // Sun starts at top (day)
-GLfloat sunSpeed = 0.003f;  // Movement speed
+// Sun position and movement
+GLfloat sunPosition = 0.0f; // Sun starts at top (0.0 = zenith, -0.9 = set)
+GLfloat sunSpeed = 0.003f;  // Movement speed per frame
 int dayNightDirection = -1; // -1 for setting, 1 for rising
-int sunPauseCounter = 0;    // Counter for 10-second pause at peak
+int sunPauseCounter = 0;    // 10-second pause at peak
 void updateMoon(int value);
 
+// ============================================
+// SUN ANIMATION UPDATE
+// ============================================
+// Controls day/night cycle with pause at zenith
 void updateSun(int value)
 {
-    // If at top position, pause for 10 seconds (100 updates * 100ms)
-    if (sunPosition >= 0.0f && dayNightDirection == 1)
+    if (!isPaused)
     {
-        sunPauseCounter++;
-        if (sunPauseCounter >= 100)
+        // If at top position, pause for 10 seconds (100 updates * 100ms)
+        if (sunPosition >= 0.0f && dayNightDirection == 1)
         {
-            sunPauseCounter = 0;
-            dayNightDirection = -1; // Start setting
+            sunPauseCounter++;
+            if (sunPauseCounter >= 100)
+            {
+                sunPauseCounter = 0;
+                dayNightDirection = -1; // Start setting
+            }
         }
-    }
-    // If at bottom, don't pause - let moon take over
-    else if (sunPosition <= -0.9f && dayNightDirection == -1)
-    {
-        sunPosition = -0.9f;
-        // Sun stays here while moon is up, will rise when moon sets
-    }
-    else
-    {
-        // Normal movement
-        sunPosition += sunSpeed * dayNightDirection;
+        // If at bottom, don't pause - let moon take over
+        else if (sunPosition <= -0.9f && dayNightDirection == -1)
+        {
+            sunPosition = -0.9f;
+            // Sun stays here while moon is up, will rise when moon sets
+        }
+        else
+        {
+            // Normal movement with time speed multiplier
+            sunPosition += sunSpeed * dayNightDirection * timeSpeed;
+        }
     }
 
     glutPostRedisplay();
     glutTimerFunc(100, updateSun, 0);
 }
 
+// ============================================
+// MOON ANIMATION UPDATE
+// ============================================
+// Rises when sun sets, synchronized for continuous day/night
 void updateMoon(int value)
 {
-    // Moon moves opposite to sun
-    int moonDirection = -dayNightDirection;
+    if (!isPaused)
+    {
+        // Moon moves opposite to sun
+        int moonDirection = -dayNightDirection;
 
-    // If at top position (0.6 = peak, same height as sun at day), pause for 10 seconds
-    if (moonPosition >= 0.6f && moonDirection == 1)
-    {
-        moonPauseCounter++;
-        if (moonPauseCounter >= 100)
+        // If at top position (0.6 = peak, same height as sun at day), pause for 10 seconds
+        if (moonPosition >= 0.6f && moonDirection == 1)
         {
-            moonPauseCounter = 0;
-            dayNightDirection = 1; // Trigger sun to rise (which makes moon set)
+            moonPauseCounter++;
+            if (moonPauseCounter >= 100)
+            {
+                moonPauseCounter = 0;
+                dayNightDirection = 1; // Trigger sun to rise (which makes moon set)
+                dayCounter++;          // New day starts when moon sets
+            }
         }
-    }
-    // If at bottom, stay there while sun is up
-    else if (moonPosition <= -0.6f && moonDirection == -1)
-    {
-        moonPosition = -0.6f;
-    }
-    else
-    {
-        // Normal movement (opposite to sun - when sun goes down, moon goes up)
-        moonPosition += moonSpeed * moonDirection;
+        // If at bottom, stay there while sun is up
+        else if (moonPosition <= -0.6f && moonDirection == -1)
+        {
+            moonPosition = -0.6f;
+        }
+        else
+        {
+            // Normal movement with time speed multiplier
+            moonPosition += moonSpeed * moonDirection * timeSpeed;
+        }
     }
 
     glutPostRedisplay();
@@ -351,12 +413,14 @@ void updateMoon(int value)
 }
 void updateBoat(int value)
 {
-
-    if (boatPosition > .40)
+    if (!isPaused)
     {
-        boatPosition = -1.0;
+        if (boatPosition > .40)
+        {
+            boatPosition = -1.0;
+        }
+        boatPosition += boatSpeed;
     }
-    boatPosition += boatSpeed;
 
     glutPostRedisplay();
 
@@ -365,11 +429,14 @@ void updateBoat(int value)
 
 void updateCloud(int value)
 {
-    if (cloudPosition > 0.9)
+    if (!isPaused)
     {
-        cloudPosition = -1.4;
+        if (cloudPosition > 0.9)
+        {
+            cloudPosition = -1.4;
+        }
+        cloudPosition += cloudSpeed;
     }
-    cloudPosition += cloudSpeed;
 
     glutPostRedisplay();
 
@@ -378,12 +445,15 @@ void updateCloud(int value)
 
 void updateCloud1(int value)
 {
-    if (cloud1Position > 1.3)
+    if (!isPaused)
     {
-        cloud1Position = -1.4;
-    }
+        if (cloud1Position > 1.3)
+        {
+            cloud1Position = -1.4;
+        }
 
-    cloud1Position += cloudSpeed;
+        cloud1Position += cloudSpeed;
+    }
 
     glutPostRedisplay();
 
@@ -423,11 +493,15 @@ void windMills()
     glEnd();
 }
 
+// ============================================
+// TREE DRAWING WITH SHEAR TRANSFORMATION
+// ============================================
+// Multiple trees with wind sway effect using shear matrix
 void tree()
 {
     // Tree 1 with wind shear effect
     glPushMatrix();
-    // Apply shear transformation matrix for wind effect
+    // Apply shear transformation matrix for realistic wind sway
     GLfloat shearMatrix[16] = {
         1.0f, 0.0f, 0.0f, 0.0f,
         windShear, 1.0f, 0.0f, 0.0f,
@@ -590,6 +664,10 @@ void tree()
     glEnd();
 }
 
+// ============================================
+// RIVER WITH WATER REFLECTION
+// ============================================
+// Uses gradient coloring and simulated sun reflection
 void river()
 {
     // River with enhanced gradient and shimmer effect
@@ -1130,6 +1208,10 @@ void clouds2()
 
     glPopMatrix();
 }
+// ============================================
+// SKY RENDERING (DAY)
+// ============================================
+// Dynamic gradient based on sun position for realistic transitions
 void sky(int value)
 {
     // Dynamic gradient sky based on sun position
@@ -1150,6 +1232,10 @@ void sky(int value)
     glutTimerFunc(5, sky, 0);
 }
 
+// ============================================
+// NIGHT SKY WITH STARS
+// ============================================
+// Midnight blue gradient with twinkling star points
 void night(int value)
 {
     // Night sky gradient - extends to bottom of screen
@@ -1383,6 +1469,120 @@ void ship()
     glVertex2f(-0.83f, -0.8f);
     glVertex2f(-0.83f, -0.7f);
     glEnd();
+}
+
+// ============================================
+// VEHICLE HEADLIGHTS (NIGHT ONLY)
+// ============================================
+// Renders triangular light cones from vehicles
+// Only active when sunPosition <= -0.7 (night time)
+void drawVehicleHeadlights()
+{
+    if (sunPosition > -0.7)
+        return; // Only at night when sun is below horizon
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Truck headlights
+    glPushMatrix();
+    glTranslatef(truckPosition, 0.0f, 0.0f);
+    glBegin(GL_TRIANGLES);
+    glColor4f(1.0f, 0.95f, 0.6f, 0.4f);
+    glVertex2f(-0.58f, -0.80f);
+    glColor4f(1.0f, 0.95f, 0.6f, 0.0f);
+    glVertex2f(-0.45f, -0.85f);
+    glVertex2f(-0.45f, -0.75f);
+    glEnd();
+    glPopMatrix();
+
+    // Car headlights (car moves left, so headlight on left side)
+    glPushMatrix();
+    glTranslatef(carPosition, 0.0f, 0.0f);
+    glBegin(GL_TRIANGLES);
+    glColor4f(1.0f, 0.95f, 0.6f, 0.4f);
+    glVertex2f(0.0f, -0.90f);
+    glColor4f(1.0f, 0.95f, 0.6f, 0.0f);
+    glVertex2f(-0.08f, -0.95f);
+    glVertex2f(-0.08f, -0.85f);
+    glEnd();
+    glPopMatrix();
+
+    glDisable(GL_BLEND);
+}
+
+// ============================================
+// DYNAMIC SHADOWS (DAY ONLY)
+// ============================================
+// Casts shadows from houses and trees based on sun position
+// Shadow intensity varies with sun height
+void drawShadows()
+{
+    if (sunPosition <= -0.5)
+        return; // No shadows at night
+
+    float shadowIntensity = (sunPosition + 0.5f) / 1.2f;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // House 1 shadow
+    glColor4f(0.0f, 0.0f, 0.0f, 0.2f * shadowIntensity);
+    glBegin(GL_QUADS);
+    glVertex2f(0.54f, -0.42f);
+    glVertex2f(0.60f, -0.47f);
+    glVertex2f(0.81f, -0.47f);
+    glVertex2f(0.75f, -0.42f);
+    glEnd();
+
+    // House 2 shadow
+    glBegin(GL_QUADS);
+    glVertex2f(-0.79f, -0.72f);
+    glVertex2f(-0.74f, -0.76f);
+    glVertex2f(-0.57f, -0.76f);
+    glVertex2f(-0.62f, -0.72f);
+    glEnd();
+
+    // Tree shadows (simplified)
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.85f, -0.80f);
+    glVertex2f(-0.88f, -0.82f);
+    glVertex2f(-0.82f, -0.82f);
+    glEnd();
+
+    glDisable(GL_BLEND);
+}
+
+// ============================================
+// USER INTERFACE OVERLAY
+// ============================================
+// Displays day counter, speed, pause status, and controls
+void drawUI()
+{
+    // Day counter
+    glColor3f(1.0f, 1.0f, 1.0f);
+    char dayStr[30];
+    sprintf(dayStr, "DAY: %d", dayCounter);
+    renderBitmapString(-0.98f, 0.95f, font3, dayStr);
+
+    // Pause indicator
+    if (isPaused)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderBitmapString(-0.15f, 0.0f, font1, "PAUSED");
+    }
+
+    // Speed indicator
+    if (timeSpeed != 1.0f)
+    {
+        glColor3f(0.8f, 1.0f, 0.8f);
+        char speedStr[30];
+        sprintf(speedStr, "Speed: %.1fx", timeSpeed);
+        renderBitmapString(-0.98f, 0.85f, font3, speedStr);
+    }
+
+    // Controls help (small text at bottom)
+    glColor3f(0.9f, 0.9f, 0.9f);
+    renderBitmapString(-0.98f, -0.95f, font3, "[P]Pause [+/-]Speed [Z]Zoom");
 }
 
 void grass1()
@@ -1803,12 +2003,16 @@ void hut2()
     glEnd();
 }
 
+// ============================================
+// WINDMILL FAN WITH ROTATION TRANSFORMATION
+// ============================================
+// Three-blade windmill using accumulated rotation
 void drawWindmill()
 {
     int i;
 
     glTranslatef(0.53, -0.3, 0);
-    glRotated(angle * (180.0 / 46), 0, 0, 1);
+    glRotated(angle * (180.0 / 46), 0, 0, 1); // Apply rotation transformation
     glColor3f(255.0f, 255.0f, 255.0f);
     for (i = 0; i < 3; i++)
     {
@@ -1900,10 +2104,19 @@ void LastDesign()
     renderBitmapString(-.11, 0.06, font1, "Thank You !");
 }
 
+// ============================================
+// MAIN DISPLAY FUNCTION
+// ============================================
+// Renders complete scene with all objects and effects
+// Order: Sky -> Background -> Shadows -> Objects -> Headlights -> UI
 void myDisplay(void)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
+
+    // Apply zoom transformation
+    glScalef(zoomLevel, zoomLevel, 1.0f);
+
     glPointSize(2.0);
     /*if(start_flag ==0 )
         {
@@ -1949,6 +2162,9 @@ void myDisplay(void)
 
         clouds2();
 
+        // Draw shadows before objects
+        drawShadows();
+
         hut();
 
         bridge();
@@ -1959,6 +2175,9 @@ void myDisplay(void)
 
         hut2();
 
+        // Vehicle headlights before vehicles
+        drawVehicleHeadlights();
+
         vehicle();
 
         vehicle2();
@@ -1968,6 +2187,10 @@ void myDisplay(void)
         windmilStick();
 
         drawWindmill();
+
+        // UI overlay (reset scale for UI)
+        glLoadIdentity();
+        drawUI();
     }
 
     else if (start_flag == 1)
@@ -1978,6 +2201,11 @@ void myDisplay(void)
     glFlush();
 }
 
+// ============================================
+// KEYBOARD INTERACTION HANDLER
+// ============================================
+// Controls: A/S (truck), D/F (car), P (pause), +/- (speed),
+//           Z/X/C (zoom), SPACE (toggle), ENTER (exit)
 void myKeyboard(unsigned char key, int x, int y)
 {
     switch (key)
@@ -2007,6 +2235,40 @@ void myKeyboard(unsigned char key, int x, int y)
             carSpeed += 0.02f;
         break;
 
+    case 'p': // Pause/Resume
+    case 'P':
+        isPaused = !isPaused;
+        break;
+
+    case '+': // Speed up time
+    case '=':
+        if (timeSpeed < 5.0f)
+            timeSpeed += 0.5f;
+        break;
+
+    case '-': // Slow down time
+    case '_':
+        if (timeSpeed > 0.5f)
+            timeSpeed -= 0.5f;
+        break;
+
+    case 'z': // Zoom in
+    case 'Z':
+        if (zoomLevel < 2.0f)
+            zoomLevel += 0.1f;
+        break;
+
+    case 'x': // Zoom out
+    case 'X':
+        if (zoomLevel > 0.5f)
+            zoomLevel -= 0.1f;
+        break;
+
+    case 'c': // Reset zoom
+    case 'C':
+        zoomLevel = 1.0f;
+        break;
+
     case ' ':
         if (start_flag == 0)
         {
@@ -2033,16 +2295,21 @@ void myInit(void)
     glClearColor(0.5f, 0.5f, 0.5f, 1);
 }
 
+// ============================================
+// MAIN PROGRAM ENTRY POINT
+// ============================================
+// Initializes OpenGL/GLUT and starts animation timers
 int main(int argc, char **argv)
 {
 
     cout << "\n========================================" << endl;
     cout << "   SCENIC LANDSCAPE SIMULATION" << endl;
     cout << "   Computer Graphics Project" << endl;
+    cout << "   ENHANCED VERSION with Effects" << endl;
     cout << "========================================\n"
          << endl;
 
-    cout << "FEATURES:" << endl;
+    cout << "CORE FEATURES:" << endl;
     cout << "  - Day/Night Cycle with Sun & Moon" << endl;
     cout << "  - Animated Vehicles & Windmill" << endl;
     cout << "  - DDA Line Drawing Algorithm" << endl;
@@ -2052,23 +2319,41 @@ int main(int argc, char **argv)
     cout << "  - Reflection (Water Surface)\n"
          << endl;
 
-    cout << "CONTROLS:" << endl;
+    cout << "NEW ENHANCEMENTS:" << endl;
+    cout << "  💡 Vehicle Headlights" << endl;
+    cout << "  🎬 Pause & Time Speed Control" << endl;
+    cout << "  🔍 Zoom In/Out" << endl;
+    cout << "  📊 Real-Time UI (Time, Day, FPS)" << endl;
+    cout << "  🌑 Dynamic Shadows\n"
+         << endl;
+
+    cout << "VEHICLE CONTROLS:" << endl;
     cout << "  [A] - Slow down Truck" << endl;
     cout << "  [S] - Speed up Truck" << endl;
     cout << "  [D] - Slow down Car" << endl;
-    cout << "  [F] - Speed up Car" << endl;
+    cout << "  [F] - Speed up Car\n"
+         << endl;
+
+    cout << "SCENE CONTROLS:" << endl;
+    cout << "  [P] - Pause/Resume Animation" << endl;
+    cout << "  [+] - Speed up Time (faster day/night)" << endl;
+    cout << "  [-] - Slow down Time" << endl;
+    cout << "  [Z] - Zoom In" << endl;
+    cout << "  [X] - Zoom Out" << endl;
+    cout << "  [C] - Reset Zoom" << endl;
     cout << "  [SPACE] - Toggle Screen" << endl;
     cout << "  [ENTER] - Exit Program\n"
          << endl;
 
-    cout << "Enjoy the scenic view! 🌄\n"
+    cout << "Watch the UI at top of screen for live info!" << endl;
+    cout << "Enjoy the enhanced scenic view! 🌄✨\n"
          << endl;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     glutInitWindowSize(1200, 680);
     glutInitWindowPosition(50, 10);
-    glutCreateWindow("Scenic Day-Night Landscape | Computer Graphics Project");
+    glutCreateWindow("Enhanced Scenic Landscape | Computer Graphics Project");
 
     myInit();
 
