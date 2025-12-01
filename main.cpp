@@ -1,5 +1,3 @@
-
-
 #include <cstdio>
 #include <iostream>
 #include <GL/gl.h>
@@ -2324,7 +2322,8 @@ int main(int argc, char **argv)
     cout << "  🎬 Pause & Time Speed Control" << endl;
     cout << "  🔍 Zoom In/Out" << endl;
     cout << "  📊 Real-Time UI (Time, Day, FPS)" << endl;
-    cout << "  🌑 Dynamic Shadows\n"
+    cout << "  🌑 Dynamic Shadows" << endl;
+    cout << "  🎵 Background Music\n"
          << endl;
 
     cout << "VEHICLE CONTROLS:" << endl;
@@ -2347,6 +2346,16 @@ int main(int argc, char **argv)
 
     cout << "Watch the UI at top of screen for live info!" << endl;
     cout << "Enjoy the enhanced scenic view! 🌄✨\n"
+         << endl;
+
+    // ============================================
+    // START BACKGROUND MUSIC
+    // ============================================
+    // Play Music.mp3 in loop mode using MCI (Media Control Interface)
+    // mciSendString supports MP3 format unlike PlaySound which only supports WAV
+    mciSendString(TEXT("open \"Music.mp3\" type mpegvideo alias mp3"), NULL, 0, NULL);
+    mciSendString(TEXT("play mp3 repeat"), NULL, 0, NULL);
+    cout << "🎵 Background music started...\n"
          << endl;
 
     glutInit(&argc, argv);
