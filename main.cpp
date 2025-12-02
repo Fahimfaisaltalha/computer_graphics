@@ -151,6 +151,40 @@ void updateWaterWave(int value)
 }
 
 // ============================================
+// BRESENHAM'S LINE DRAWING ALGORITHM
+// ============================================
+void bresenhamLine(int x1, int y1, int x2, int y2)
+{
+    int dx = abs(x2 - x1);
+    int dy = abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    glBegin(GL_POINTS);
+    while (true)
+    {
+        glVertex2i(x1, y1);
+
+        if (x1 == x2 && y1 == y2)
+            break;
+
+        int e2 = 2 * err;
+        if (e2 > -dy)
+        {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx)
+        {
+            err += dx;
+            y1 += sy;
+        }
+    }
+    glEnd();
+}
+
+// ============================================
 // COHEN-SUTHERLAND LINE CLIPPING ALGORITHM
 // ============================================
 // Clips lines to viewport boundaries before drawing
@@ -723,13 +757,23 @@ void river()
 
 void hills()
 {
-    // Hills 1
+    // Hills 1 - DRAWN WITH BRESENHAM'S LINE ALGORITHM
     glColor3ub(0, 102, 0);
     glBegin(GL_POLYGON);
     glVertex2f(-0.55f, 0.36f);
     glVertex2f(-0.8f, -0.1f);
     glVertex2f(-0.68f, -0.13f);
     glEnd();
+
+    // Draw outline using Bresenham's Line Algorithm
+    glColor3ub(34, 139, 34); // Darker green for outline
+    glPointSize(2.0f);
+    // Convert normalized coordinates to pixel coordinates (window is 1200x680)
+    bresenhamLine(270, 463, 120, 374); // (-0.55, 0.36) to (-0.8, -0.1)
+    bresenhamLine(120, 374, 192, 296); // (-0.8, -0.1) to (-0.68, -0.13)
+    bresenhamLine(192, 296, 270, 463); // (-0.68, -0.13) to (-0.55, 0.36)
+    glPointSize(1.0f);
+
     glColor3ub(3, 182, 10);
     glBegin(GL_TRIANGLES);
     glVertex2f(-0.55f, 0.36f);
